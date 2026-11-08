@@ -1,2 +1,4 @@
 # apartment-planner
-Vibecoded apartment furniture planner. Hardcoded floorplan; interactable furniture and label creation.
+A simple vibe-coded interactable floorplan sketching tool for my apartment.
+
+Widget is live on GitHub Pages [here](https://sinback.github.io/apartment-planner/).
