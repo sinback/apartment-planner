@@ -261,7 +261,7 @@ textarea#ioText { width: 100%; min-height: 110px; font: .75rem/1.4 var(--f-num);
       <div class="card">
         <h2>Share layout</h2>
         <div class="row">
-          <button type="button" id="exportFile" hidden>Export file</button>
+          <button type="button" id="exportFile">Export file</button>
           <button type="button" id="exportCopy">Copy JSON</button>
         </div>
         <div class="row">
@@ -630,20 +630,20 @@ textarea#ioText { width: 100%; min-height: 110px; font: .75rem/1.4 var(--f-num);
   }, null, 2);
   const stamp = () => { const d = new Date(), z = n => String(n).padStart(2, '0'); return `${d.getFullYear()}-${z(d.getMonth() + 1)}-${z(d.getDate())}-${z(d.getHours())}${z(d.getMinutes())}`; };
 
-  Promise.resolve(window.claude?.use?.('downloads')).then(dl => {
-    if (!dl) return;
-    const b = $('exportFile'); b.hidden = false;
-    b.onclick = async () => {
-      try {
-        await dl.save({ filename: `furniture-layout-${stamp()}.json`, data: layoutJSON() });
-        msg(`Saved ${pieces.length} piece${pieces.length === 1 ? '' : 's'} to a file.`);
-      } catch (e) {
-        if (e && e.code === 'declined') msg('Export cancelled.');
-        else if (e && e.code === 'rate_limited') msg('A save prompt is already open. Finish that one first.', true);
-        else { b.hidden = true; msg('File export isn’t available here. Use Copy JSON instead.', true); }
-      }
-    };
-  }).catch(() => {});
+  // plain browser download: wrap the JSON in a Blob and click a temporary <a download> link
+  $('exportFile').onclick = () => {
+    try {
+      const url = URL.createObjectURL(new Blob([layoutJSON()], { type: 'application/json' }));
+      const a = document.createElement('a');
+      a.href = url; a.download = `furniture-layout-${stamp()}.json`;
+      document.body.appendChild(a); a.click(); a.remove();
+      // revoke later, not immediately: some browsers start the download asynchronously
+      setTimeout(() => URL.revokeObjectURL(url), 4000);
+      msg(`Downloaded ${pieces.length} piece${pieces.length === 1 ? '' : 's'} as a .json file.`);
+    } catch (e) {
+      msg('File export isn’t available in this browser. Use Copy JSON instead.', true);
+    }
+  };
 
   $('exportCopy').onclick = () => {
     const text = layoutJSON();
