@@ -48,7 +48,12 @@ network. It outputs 44 channels: 21 junction/opening-corner heatmaps, 12 room cl
 - **Timings** on a 4-core CPU, PyTorch 2.15 CPU build:
   - Model load: 0.6 s.
   - Inference with the official 4-rotation test-time augmentation: **7 s** at native 1194×703,
-    **41 s** upscaled 2×. I used 2×, because at 1× the wall mask paints over several door gaps.
+    **41 s** upscaled 2×. I used 2×.
+- **Resolution matters.** At 1× (walls about 6 px thick), the wall mask paints over several door
+  gaps, and one opening is snapped onto the wrong wall (see Openings below). At 2× (about 12 px)
+  both problems go away. For the upload feature, uploads will come in at different resolutions, so
+  each image should be resized to a target wall thickness (or a target px/ft) before inference,
+  rather than run at whatever size it arrives.
   - Official polygon post-processing: about 1 s.
   - Vectorize + compare: under 1 s.
 
@@ -97,9 +102,31 @@ From `output/metrics.json`:
 
 `output/wall_diff.png`: black = agree, red = model only, blue = image only.
 
+### Openings: all 26 at scale 2, broken down
+
+The JSON is the model's actual output; nothing was hand-corrected.
+
+| Bucket | Count | Notes |
+|---|---|---|
+| Matched a hand-placed door | 10 | all 10 of `#doors` |
+| Real windows | 14 | of 16 windows in the image |
+| Door-like opening not in `#doors` | 2 | both look like real, unglazed openings (see below); not counted as false positives until the user confirms |
+| False positives | 0 | at scale 2 |
+
+Misses, against the image:
+- **The 2 diagonal bay windows.** The opening detector only proposes axis-aligned openings.
+- **The closet's opening onto the master bedroom** (x 822, y 338–378) isn't reported as an opening.
+  The wall mask does leave the gap open.
+- **The laundry room's bottom gap** (x 490–530, y 322) isn't reported either, but it's also open in
+  the wall mask.
+
+**At scale 1** the same post-processing put one opening on the solid wall at x 780 instead of the
+closet gap at x 822. That's 1 miss plus 1 false positive, and the 1× wall mask also closed several
+door gaps.
+
 ### Doors
 
-Ground truth is the 10 hand-placed doors in `#doors`.
+The reference is the 10 hand-placed doors in `#doors`.
 
 | | Count |
 |---|---|
@@ -112,6 +139,9 @@ Ground truth is the 10 hand-placed doors in `#doors`.
 - **Position.** Endpoint error is 3.2 px for 9 doors and 4.1 px for one. Almost all of that is a
   convention difference: the hand-drawn swings sit on the wall *face*, while the model's openings
   sit on the wall *centerline*. Along the wall, the jambs agree within about 1 px.
+  - **How to read this match.** The hand-placed doors were read off these same pixels by the LLM.
+    A close match shows the two readings of the image agree. It doesn't show that either one is
+    ground truth for the real apartment.
 - **Why the model says "window".** CubiCasa5K annotates doors with swing arcs. This plan (a
   Matterport-style export) draws doors as a plain white gap between two thin grey lines, which
   looks more like CubiCasa's window glyph. The official post-processing decides each opening's
@@ -119,8 +149,12 @@ Ground truth is the 10 hand-placed doors in `#doors`.
   pixels in the whole 2× mask), so every opening became "window".
 - **The glazing check** (`vectorize.py`, not ML) is my addition, not the model's. It averages the
   image's intensity profile across the wall at each opening. Windows here always have dark glazing
-  lines inside the band (minimum ≤ 160); doors never go below 197. The threshold is 170. The JSON
-  keeps both labels: `model_class` (raw) and its place in `doors` vs `windows` (after the check).
+  lines inside the band (minimum ≤ 160); doors never go below 197. The threshold is 170.
+  - **Its 10/10 is optimistic.** I designed the rule and picked the threshold by looking at this
+    same image, so this is a training-set score, not a held-out one.
+  - **What the app shows vs. what the JSON keeps.** The app renders the classes *after* the check.
+    The model's raw class is kept as `model_class` on every opening in the JSON; it's "window" for
+    all 26.
 - **The 2 extra door-like openings.** Both look like real, unglazed openings in the image. Please
   check them on site:
   - The office ("Bike/Shoe Room") left wall, x 880, y 441–478.
@@ -135,6 +169,12 @@ Ground truth is the 10 hand-placed doors in `#doors`.
   right-hand wall (x 822, y 338–378).
 - **Misplaced opening (scale 1 only).** At native resolution the post-processing snapped one opening
   onto the solid wall at x 780 instead of the closet gap at x 822. That's another reason for 2×.
+
+### Room segmentation (out of scope, one note)
+
+The 12 room classes aren't useful on this plan. At scale 2, most of the floor area comes out as
+"Undefined" or "Background", and only part of one room is "Living Room". The model doesn't
+recognize this export's room styling, so that output isn't worth building on.
 
 ## What changed in the app (`index.html`)
 
