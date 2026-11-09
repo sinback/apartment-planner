@@ -41,16 +41,11 @@ def load_model(repo, weights):
 
 def predict(model, repo, img_rgb, scale):
     """4-rotation test-time augmentation, as in the official samples notebook."""
-    # Load augmentations.py on its own: importing the floortrans.loaders package pulls in
-    # dataset-only deps (lmdb, svgpathtools) that inference doesn't need.
-    import importlib.util
-    import os
-    spec = importlib.util.spec_from_file_location(
-        "cc_augmentations", os.path.join(repo, "floortrans", "loaders", "augmentations.py"))
-    aug = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(aug)
+    sys.path.insert(0, repo)
+    # Importing floortrans.loaders pulls in dataset-only deps (lmdb, svgpathtools); install them.
+    from floortrans.loaders import RotateNTurns
 
-    rot = aug.RotateNTurns()
+    rot = RotateNTurns()
     h0, w0 = img_rgb.shape[:2]
     pil = Image.fromarray(img_rgb)
     if scale != 1:

@@ -1,0 +1,7 @@
+cubicasa_src/
+*.pkl
+*.pth
+*.onnx
+*.npz
+venv/
+original.png

@@ -1,0 +1,222 @@
+{
+ "walls": {
+  "all": {
+   "pixel_iou": 0.714,
+   "pixel_precision": 0.716,
+   "pixel_recall": 0.996,
+   "within_1px": {
+    "precision": 0.86,
+    "recall": 0.998
+   },
+   "within_2px": {
+    "precision": 0.87,
+    "recall": 0.999
+   }
+  },
+  "excluding_window_spans": {
+   "pixel_iou": 0.799,
+   "pixel_precision": 0.802,
+   "pixel_recall": 0.996,
+   "within_1px": {
+    "precision": 0.958,
+    "recall": 0.998
+   },
+   "within_2px": {
+    "precision": 0.965,
+    "recall": 0.999
+   }
+  }
+ },
+ "doors": {
+  "hand_placed": 10,
+  "found_as_opening": 10,
+  "raw_model_called_door": 0,
+  "heuristic_called_door": 10,
+  "extra_doors_not_in_app": [
+   {
+    "a": [
+     880.0,
+     441.0
+    ],
+    "b": [
+     880.0,
+     478.0
+    ]
+   },
+   {
+    "a": [
+     308.0,
+     373.0
+    ],
+    "b": [
+     351.0,
+     373.0
+    ]
+   }
+  ],
+  "per_door": [
+   {
+    "door": "Entry -> Master Bedroom (hinge R)",
+    "found": true,
+    "endpoint_err_px": 4.1,
+    "model_class": "window",
+    "heuristic_class": "door"
+   },
+   {
+    "door": "Dining Room -> Master Bedroom (hinge R)",
+    "found": true,
+    "endpoint_err_px": 3.2,
+    "model_class": "window",
+    "heuristic_class": "door"
+   },
+   {
+    "door": "Master Bedroom -> Bike/Shoe Room (hinge L)",
+    "found": true,
+    "endpoint_err_px": 3.2,
+    "model_class": "window",
+    "heuristic_class": "door"
+   },
+   {
+    "door": "Entry -> Dining Room (hinge L)",
+    "found": true,
+    "endpoint_err_px": 3.2,
+    "model_class": "window",
+    "heuristic_class": "door"
+   },
+   {
+    "door": "Kitchen -> Bathroom (hinge L)",
+    "found": true,
+    "endpoint_err_px": 3.2,
+    "model_class": "window",
+    "heuristic_class": "door"
+   },
+   {
+    "door": "Kitchen -> staircase (hinge R)",
+    "found": true,
+    "endpoint_err_px": 3.2,
+    "model_class": "window",
+    "heuristic_class": "door"
+   },
+   {
+    "door": "Hall -> Bird/Guest Room (hinge R)",
+    "found": true,
+    "endpoint_err_px": 3.2,
+    "model_class": "window",
+    "heuristic_class": "door"
+   },
+   {
+    "door": "Hall -> Living Room (hinge L)",
+    "found": true,
+    "endpoint_err_px": 3.2,
+    "model_class": "window",
+    "heuristic_class": "door"
+   },
+   {
+    "door": "Closet -> Bird/Guest Room (hinge L)",
+    "found": true,
+    "endpoint_err_px": 3.2,
+    "model_class": "window",
+    "heuristic_class": "door"
+   },
+   {
+    "door": "Closet -> Living Room (hinge R)",
+    "found": true,
+    "endpoint_err_px": 3.2,
+    "model_class": "window",
+    "heuristic_class": "door"
+   }
+  ]
+ },
+ "scale_check": [
+  {
+   "room": "Bedroom 22'9\" x 11'2\"",
+   "measured_px": [
+    363.0,
+    179.0
+   ],
+   "expected_px": [
+    364.0,
+    178.7
+   ],
+   "ratio": [
+    0.997,
+    1.002
+   ]
+  },
+  {
+   "room": "Bedroom 11'9\" x 10'2\"",
+   "measured_px": [
+    187.0,
+    162.0
+   ],
+   "expected_px": [
+    188.0,
+    162.7
+   ],
+   "ratio": [
+    0.995,
+    0.996
+   ]
+  },
+  {
+   "room": "Kitchen 12'3\" x 13'5\"",
+   "measured_px": [
+    195.0,
+    214.0
+   ],
+   "expected_px": [
+    196.0,
+    214.7
+   ],
+   "ratio": [
+    0.995,
+    0.997
+   ]
+  },
+  {
+   "room": "Living Room 13'1\" x 15'4\"",
+   "measured_px": [
+    209.0,
+    245.0
+   ],
+   "expected_px": [
+    209.3,
+    245.3
+   ],
+   "ratio": [
+    0.998,
+    0.999
+   ]
+  },
+  {
+   "room": "Bathroom 8'4\" x 6'4\"",
+   "measured_px": [
+    400.0,
+    100.0
+   ],
+   "expected_px": [
+    133.3,
+    101.3
+   ],
+   "ratio": [
+    3.0,
+    0.987
+   ]
+  },
+  {
+   "room": "Office 9'4\" x 6'5\"",
+   "measured_px": [
+    148.0,
+    101.0
+   ],
+   "expected_px": [
+    149.3,
+    102.7
+   ],
+   "ratio": [
+    0.991,
+    0.984
+   ]
+  }
+ ]
+}
