@@ -5,3 +5,4 @@ cubicasa_src/
 *.npz
 venv/
 original.png
+__pycache__/
