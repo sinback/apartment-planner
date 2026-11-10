@@ -1,8 +1,8 @@
 """Score model openings against a hand-marked reference, by position.
 
 Reference JSON (see references/): {"openings": [{"name", "kind", "a", "b"}]}, where kind is
-door | window | bifold | doorless. Only doors and windows are scored. A model opening that lands on
-a bifold or doorless reference is "neutral": neither a hit nor a false positive.
+door | window | bifold | sliding | doorless. Only (hinged) doors and windows are scored. A model
+opening that lands on a bifold, sliding or doorless reference is "neutral": neither a hit nor a false positive.
 
 Matching: a model opening matches a reference when both are on the same axis, their centerlines
 are within `across` px, and they overlap along the wall by at least half of the shorter one.
@@ -61,7 +61,7 @@ def score(model, ref, across):
                      "missed": [refs[i]["name"] for i in items if not hits_of[i]],
                      "wrong_class": [refs[i]["name"] for i in found if i not in right]}
     neutral = [refs[i]["name"] for i in hits_of
-               if refs[i]["kind"] in ("bifold", "doorless") and hits_of[i]]
+               if refs[i]["kind"] in ("bifold", "sliding", "doorless") and hits_of[i]]
     fps = [m for j, m in enumerate(mods) if j not in claimed]
     out["neutral_hits"] = neutral
     out["false_positives"] = [{"cls": m["cls"], "a": m["a"], "b": m["b"]} for m in fps]

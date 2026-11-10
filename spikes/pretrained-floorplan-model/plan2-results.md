@@ -14,10 +14,12 @@ and the glazing check from plan 1 second.
 window, hand-marked from the image **before any model run** (committed first), in the crop frame.
 - **Doors:** 11 hinged doors, matching the user's count. D7 and D8 are two separate doors back to back
   in one doorway (bath and hall).
-- **Windows:** 13 window candidates, against the user's count of 12. One of the 13 is wrong and is
-  pending confirmation; each window is scored on its own, so the totals change by one once it's known.
-- **Neutral (neither hit nor false positive):** the bifold closet doors (B1) and two doorless openings
-  (O1, the faint Living ↔ Eat-in doorway, and O2).
+- **Windows:** 12, matching the user's count. The pre-run list had 13 candidates. **After the run**,
+  the user identified W3 (the "double-wide window with a seam" on the top-right bedroom's top wall)
+  as a **sliding door**, which the user couldn't tell from the drawing at first either. Only its
+  `kind` changed; no positions were edited.
+- **Neutral (neither hit nor false positive):** the sliding door (S1), the bifold closet doors (B1),
+  and two doorless openings (O1, the faint Living ↔ Eat-in doorway, and O2).
 
 Scoring script: [`score_openings.py`](score_openings.py). It matches by position: same axis,
 centerline within 6 px, at least 50% overlap. A window detected as several pieces counts as one hit,
@@ -27,9 +29,12 @@ flagged "fragmented".
 
 | Scale | Doors found (right class) | Windows found (right class) | Fragmented windows | False positives (door / window) |
 |---|---|---|---|---|
-| 1× | **10/11 (10)** | **13/13 (13)** | 3 | **2 / 4** |
-| 2× | 10/11 (10) | 13/13 (13) | 4 | 2 / 9 |
-| 3× | 10/11 (10) | 13/13 (13) | 3 | 2 / 10 |
+| 1× | **10/11 (10)** | **12/12 (12)** | 3 | **2 / 4** |
+| 2× | 10/11 (10) | 12/12 (12) | 3 | 2 / 9 |
+| 3× | 10/11 (10) | 12/12 (12) | 3 | 2 / 10 |
+
+**The scoring rules don't drive this.** The across-wall tolerance (6 px) was chosen after the run,
+so I rescored at 3 px and 10 px: identical results at every scale.
 
 - **The model's own door/window class is right on every opening it found, at every scale.** This
   reverses plan 1, where it called all 26 openings "window". The Door mask fires on ~1,000 px here,
@@ -44,14 +49,31 @@ flagged "fragmented".
   They don't come from the Window mask (it fires only on real windows). They come from the opening
   post-processing pairing up corner-heatmap peaks on those lines. More upscaling gives more of them.
   That's the motivation for the user's next experiment: whiting out furniture before inference.
-- **Fragmentation:** the wide windows come out in 2 pieces:
-  - W3, the double-wide one with the seam the user predicted, at 2× only.
-  - W11 and W13, both drawn with seams.
-  - W9, the bay front.
+- **Fragmentation:** wide windows come out in 2 pieces: W11 and W13 (both drawn with seams), and W9
+  (the bay front). The sliding door S1, the "double-wide window" the user expected the model to
+  over-count, is labeled **window** by the model, and split in 2 at 2×.
+- **Raw window counts, for comparison with the user's "15 or 16" guess.** The model's actual
+  window output is **20 at 1× and 26 at 2× and 3×**. Of those, 15–16 are pieces on real windows or
+  the sliding door; the user's fragmentation intuition was right. The remaining 4–10 are the
+  furniture false positives, on top of that.
+- **Neutral:** the sliding door is detected at every scale, labeled window. At 3×, the faint
+  Living ↔ Eat-in doorway is detected as an opening. The bifolds are never detected.
+- **The model's own icon probability separates the furniture false positives.** I averaged the
+  model's Door + Window probability along each opening:
 
-  A raw count would have reported 16–17 windows, close to the user's predicted "15 or 16".
-- **Neutral:** at 3×, the faint Living ↔ Eat-in doorway is detected as an opening. The bifolds are
-  never detected.
+  | Scale | Hits (doors and windows) | Furniture false positives | Door false positives |
+  |---|---|---|---|
+  | 1× | 0.47–0.97 | **0.00** (all 4) | 0.65, 0.86 |
+  | 2× | 0.92–0.99 | **0.00–0.16** (8 of 9; one at 0.54) | ≤0.54 |
+  | 3× | 0.76–0.99 | **0.00–0.04** (9 of 10; one at 0.32) | ≤0.51 |
+
+  - So the post-processing labels openings "window" with almost no support from the model's own
+    icon output.
+  - This cue comes from the model, so it shouldn't depend on drawing style the way the glazing
+    check did.
+  - **I haven't built a filter from it:** a threshold picked on this image would be tuned on the
+    test data again. It's a candidate to test on the *next* plan, and a natural comparison for the
+    furniture whiting-out experiment.
 
 ## Glazing check (plan 1's door/window rule): fails on held-out data
 
@@ -103,10 +125,10 @@ need per-style calibration.
 
 - **For openings, 1× is best:** same hits as 2× and 3×, and the fewest false positives.
 - **For walls, 2× and 3× are better** (fewer thin walls lost).
-- **Auto-scale would choose 3×.** It measures 4 px ink walls, giving candidates of 2× and 3×. The
-  wall F1 scores are 0.910 vs. 0.931, which just clears the 0.02 margin. That's the scale with the
-  most false-positive windows. The wall-only score can't see opening quality, as already noted
-  after plan 1.
+- **Auto-scale picks 3×** (confirmed by running `run.py --scale auto`: `scale_selection.json` has
+  2× at 0.9097 and 3× at 0.9307, so 3× wins by a 0.021 margin over the 0.02 threshold). That's the
+  scale with the most false-positive windows. The wall-only score can't see opening quality, as
+  already noted after plan 1.
   - **Takeaway:** walls and openings want different scales. Running openings at 1× and walls at 2×
     is cheap here (6–19 s per pass) and is worth trying.
 
@@ -119,12 +141,15 @@ need per-style calibration.
 | The glazing check becomes unnecessary or harmful | ✅ **Harmful:** 0/10 doors right |
 | Exterior walls fine; thin interior walls dropped or broken | ⚠️ The mask kept the thin walls. Losses at 1× were a **vectorizer bug** (now fixed), not the model. |
 | Black blocks come out as thick wall blobs | ✅ Labeled wall by the model; the vectorizer makes odd shapes of them |
-| Auto-scale tries 2×/3× and probably keeps 2× | ❌ It would pick 3× (by a 0.021 margin), the worst scale for openings |
+| Auto-scale tries 2×/3× and probably keeps 2× | ❌ It picks 3× (by a 0.021 margin, confirmed by running it), the worst scale for openings |
 | No 45° walls, so diagonal handling shouldn't matter | ❌ The diagonal pass misfires on the black blocks |
 
 ## Open items
 
-- Which of the 13 window candidates isn't a window (user to confirm).
+- ~~Which of the 13 window candidates isn't a window~~: resolved, W3 is a sliding door.
+- Whether walls the model draws across gaps in the image should be cut. Today only *detected*
+  doors are cut. The merge fix made plan 1's closet opening appear closed in Model mode: more
+  faithful to the model, worse for furniture planning.
 - The furniture whiting-out experiment, against this baseline.
 - The vectorizer's handling of solid blocks: the diagonal pass should accept only elongated
   components, not filled blobs.

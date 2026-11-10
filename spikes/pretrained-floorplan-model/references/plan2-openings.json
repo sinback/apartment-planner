@@ -1,34 +1,338 @@
 {
- "about": "Plan 2 (Zillow listing image, CubiCasa-app drawing, 1st floor). Hand-marked by the agent from the image BEFORE any model run, in the CROPPED frame: crop = original[x 371:652, y 2:627]. Segments run along the wall centerline across the opening. User-supplied totals: 11 hinged doors, 12 windows. The agent's window list has 13 candidates; one is pending user confirmation.",
- "crop_offset_in_original": [371, 2],
- "user_totals": {"hinged_doors": 11, "windows": 12},
+ "about": "Plan 2 (Zillow listing image, CubiCasa-app drawing, 1st floor). Hand-marked by the agent from the image BEFORE any model run, in the CROPPED frame: crop = original[x 371:652, y 2:627]. Segments run along the wall centerline across the opening. User-supplied totals: 11 hinged doors, 12 windows. The agent's list had 13 window candidates. After the model run the user identified one (W3) as a sliding door, giving 12 windows. Only that 'kind' changed; no positions were edited.",
+ "crop_offset_in_original": [
+  371,
+  2
+ ],
+ "user_totals": {
+  "hinged_doors": 11,
+  "windows": 12
+ },
  "openings": [
-  {"name": "D1 left bedroom <-> its closet",        "kind": "door", "a": [121, 79],  "b": [121, 101]},
-  {"name": "D2 left bedroom <-> upper hall",        "kind": "door", "a": [121, 109], "b": [121, 134]},
-  {"name": "D3 right bedroom <-> half bath",        "kind": "door", "a": [152, 40],  "b": [152, 62]},
-  {"name": "D4 right bedroom <-> upper hall",       "kind": "door", "a": [152, 109], "b": [152, 134]},
-  {"name": "D5 eat-in kitchen <-> side hall",       "kind": "door", "a": [207, 206], "b": [207, 229]},
-  {"name": "D6 side hall <-> outside",              "kind": "door", "a": [221, 246], "b": [252, 246]},
-  {"name": "D7 bath door (swings into bath)",       "kind": "door", "a": [55, 377],  "b": [79, 377]},
-  {"name": "D8 hall door, back-to-back with D7",    "kind": "door", "a": [52, 381],  "b": [78, 381]},
-  {"name": "D9 hall <-> primary bedroom",           "kind": "door", "a": [85, 500],  "b": [85, 525]},
-  {"name": "D10 hall <-> foyer",                    "kind": "door", "a": [54, 529],  "b": [80, 529]},
-  {"name": "D11 foyer <-> outside (entry)",         "kind": "door", "a": [46, 564],  "b": [76, 564]},
-  {"name": "W1 left bedroom, top",                  "kind": "window", "a": [60, 22],   "b": [90, 22]},
-  {"name": "W2 half bath, top",                     "kind": "window", "a": [126, 22],  "b": [147, 22]},
-  {"name": "W3 right bedroom, top (double-wide, seam ~x185)", "kind": "window", "a": [156, 22], "b": [215, 22]},
-  {"name": "W4 left bedroom, left",                 "kind": "window", "a": [22, 71],   "b": [22, 100]},
-  {"name": "W5 right bedroom, right",               "kind": "window", "a": [259, 81],  "b": [259, 111]},
-  {"name": "W6 kitchen, left",                      "kind": "window", "a": [22, 231],  "b": [22, 279]},
-  {"name": "W7 eat-in kitchen, right",              "kind": "window", "a": [207, 260], "b": [207, 296]},
-  {"name": "W8 bath, left",                         "kind": "window", "a": [22, 349],  "b": [22, 375]},
-  {"name": "W9 living room bay, front",             "kind": "window", "a": [229, 329], "b": [229, 389]},
-  {"name": "W10 stairs, left",                      "kind": "window", "a": [22, 489],  "b": [22, 519]},
-  {"name": "W11 primary bedroom, right upper (seam ~y482)", "kind": "window", "a": [207, 454], "b": [207, 515]},
-  {"name": "W12 primary bedroom, right lower",      "kind": "window", "a": [207, 565], "b": [207, 590]},
-  {"name": "W13 primary bedroom, bottom (seam ~x156)", "kind": "window", "a": [126, 604], "b": [187, 604]},
-  {"name": "B1 primary bedroom closet bifolds",     "kind": "bifold", "a": [157, 440], "b": [204, 440]},
-  {"name": "O1 living <-> eat-in kitchen (faint doorway)", "kind": "doorless", "a": [130, 300], "b": [202, 300]},
-  {"name": "O2 hall <-> living room",               "kind": "doorless", "a": [85, 391], "b": [85, 417]}
+  {
+   "name": "D1 left bedroom <-> its closet",
+   "kind": "door",
+   "a": [
+    121,
+    79
+   ],
+   "b": [
+    121,
+    101
+   ]
+  },
+  {
+   "name": "D2 left bedroom <-> upper hall",
+   "kind": "door",
+   "a": [
+    121,
+    109
+   ],
+   "b": [
+    121,
+    134
+   ]
+  },
+  {
+   "name": "D3 right bedroom <-> half bath",
+   "kind": "door",
+   "a": [
+    152,
+    40
+   ],
+   "b": [
+    152,
+    62
+   ]
+  },
+  {
+   "name": "D4 right bedroom <-> upper hall",
+   "kind": "door",
+   "a": [
+    152,
+    109
+   ],
+   "b": [
+    152,
+    134
+   ]
+  },
+  {
+   "name": "D5 eat-in kitchen <-> side hall",
+   "kind": "door",
+   "a": [
+    207,
+    206
+   ],
+   "b": [
+    207,
+    229
+   ]
+  },
+  {
+   "name": "D6 side hall <-> outside",
+   "kind": "door",
+   "a": [
+    221,
+    246
+   ],
+   "b": [
+    252,
+    246
+   ]
+  },
+  {
+   "name": "D7 bath door (swings into bath)",
+   "kind": "door",
+   "a": [
+    55,
+    377
+   ],
+   "b": [
+    79,
+    377
+   ]
+  },
+  {
+   "name": "D8 hall door, back-to-back with D7",
+   "kind": "door",
+   "a": [
+    52,
+    381
+   ],
+   "b": [
+    78,
+    381
+   ]
+  },
+  {
+   "name": "D9 hall <-> primary bedroom",
+   "kind": "door",
+   "a": [
+    85,
+    500
+   ],
+   "b": [
+    85,
+    525
+   ]
+  },
+  {
+   "name": "D10 hall <-> foyer",
+   "kind": "door",
+   "a": [
+    54,
+    529
+   ],
+   "b": [
+    80,
+    529
+   ]
+  },
+  {
+   "name": "D11 foyer <-> outside (entry)",
+   "kind": "door",
+   "a": [
+    46,
+    564
+   ],
+   "b": [
+    76,
+    564
+   ]
+  },
+  {
+   "name": "W1 left bedroom, top",
+   "kind": "window",
+   "a": [
+    60,
+    22
+   ],
+   "b": [
+    90,
+    22
+   ]
+  },
+  {
+   "name": "W2 half bath, top",
+   "kind": "window",
+   "a": [
+    126,
+    22
+   ],
+   "b": [
+    147,
+    22
+   ]
+  },
+  {
+   "name": "S1 right bedroom, top: sliding door (was W3; double-wide glyph with a seam)",
+   "kind": "sliding",
+   "a": [
+    156,
+    22
+   ],
+   "b": [
+    215,
+    22
+   ],
+   "corrected_after_run": "User, after the model run: this is a sliding door, not a window. That resolves the 13-vs-12 window count."
+  },
+  {
+   "name": "W4 left bedroom, left",
+   "kind": "window",
+   "a": [
+    22,
+    71
+   ],
+   "b": [
+    22,
+    100
+   ]
+  },
+  {
+   "name": "W5 right bedroom, right",
+   "kind": "window",
+   "a": [
+    259,
+    81
+   ],
+   "b": [
+    259,
+    111
+   ]
+  },
+  {
+   "name": "W6 kitchen, left",
+   "kind": "window",
+   "a": [
+    22,
+    231
+   ],
+   "b": [
+    22,
+    279
+   ]
+  },
+  {
+   "name": "W7 eat-in kitchen, right",
+   "kind": "window",
+   "a": [
+    207,
+    260
+   ],
+   "b": [
+    207,
+    296
+   ]
+  },
+  {
+   "name": "W8 bath, left",
+   "kind": "window",
+   "a": [
+    22,
+    349
+   ],
+   "b": [
+    22,
+    375
+   ]
+  },
+  {
+   "name": "W9 living room bay, front",
+   "kind": "window",
+   "a": [
+    229,
+    329
+   ],
+   "b": [
+    229,
+    389
+   ]
+  },
+  {
+   "name": "W10 stairs, left",
+   "kind": "window",
+   "a": [
+    22,
+    489
+   ],
+   "b": [
+    22,
+    519
+   ]
+  },
+  {
+   "name": "W11 primary bedroom, right upper (seam ~y482)",
+   "kind": "window",
+   "a": [
+    207,
+    454
+   ],
+   "b": [
+    207,
+    515
+   ]
+  },
+  {
+   "name": "W12 primary bedroom, right lower",
+   "kind": "window",
+   "a": [
+    207,
+    565
+   ],
+   "b": [
+    207,
+    590
+   ]
+  },
+  {
+   "name": "W13 primary bedroom, bottom (seam ~x156)",
+   "kind": "window",
+   "a": [
+    126,
+    604
+   ],
+   "b": [
+    187,
+    604
+   ]
+  },
+  {
+   "name": "B1 primary bedroom closet bifolds",
+   "kind": "bifold",
+   "a": [
+    157,
+    440
+   ],
+   "b": [
+    204,
+    440
+   ]
+  },
+  {
+   "name": "O1 living <-> eat-in kitchen (faint doorway)",
+   "kind": "doorless",
+   "a": [
+    130,
+    300
+   ],
+   "b": [
+    202,
+    300
+   ]
+  },
+  {
+   "name": "O2 hall <-> living room",
+   "kind": "doorless",
+   "a": [
+    85,
+    391
+   ],
+   "b": [
+    85,
+    417
+   ]
+  }
  ]
 }
