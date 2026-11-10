@@ -111,10 +111,9 @@ The JSON is the model's actual output; nothing was hand-corrected.
 
 | Bucket | Count | Notes |
 |---|---|---|
-| Matched a hand-placed door | 10 | all 10 of `#doors` |
+| Matched a real door | **11** | all 10 of `#doors`, plus the office doorway the user confirmed (see Doors) |
 | Real windows | 14 | of 16 windows in the image |
-| Door-like opening not in `#doors` | 2 | both look like real, unglazed openings (see below); not counted as false positives until the user confirms |
-| False positives | 0 | at scale 2 |
+| False positives | **1** | built-in shelving at the top of the stair corridor (user-confirmed; see Doors) |
 
 Misses, against the image:
 - **The 2 diagonal bay windows.** The opening detector only proposes axis-aligned openings.
@@ -132,14 +131,20 @@ door gaps.
 
 ### Doors
 
-The reference is the 10 hand-placed doors in `#doors`.
+**The reference is the 11 real doors** ([`references/plan1-doors.json`](references/plan1-doors.json),
+scored by [`score_openings.py --only door`](score_openings.py) into
+[`output/plan1-door-score.json`](output/plan1-door-score.json)):
+- the 10 hand-placed doors in `#doors`, and
+- the **office doorway** (left wall of the "Bike/Shoe Room", x 880, y 441–478). The user confirmed
+  it after the spike (relayed by the planning session). It's not in `#doors` only because its hinge
+  side is unknown: the LLM-made `#doors` layer includes only doors whose swing the user described.
 
 | | Count |
 |---|---|
-| Hand-placed doors found as model **openings** | **10 / 10** |
-| Of those, **classified "door" by the model** | **0 / 10** (all labeled "window") |
-| Classified door by the glazing check (see below) | 10 / 10 |
-| Door-like openings the model found that aren't in `#doors` | 2 |
+| Real doors found as model **openings** | **11 / 11** |
+| Of those, **classified "door" by the model** | **0 / 11** (all labeled "window") |
+| Classified door by the glazing check (see below) | 11 / 11 |
+| Openings the glazing check calls door that aren't doors | **1** (the shelving, below) |
 | Openings misclassified as windows after the glazing check | 0 |
 
 - **Position.** Endpoint error is 3.2 px for 9 doors and 4.1 px for one. Almost all of that is a
@@ -161,10 +166,17 @@ The reference is the 10 hand-placed doors in `#doors`.
   - **What the app shows vs. what the JSON keeps.** The app renders the classes *after* the check.
     The model's raw class is kept as `model_class` on every opening in the JSON; it's "window" for
     all 26.
-- **The 2 extra door-like openings.** Both look like real, unglazed openings in the image. Please
-  check them on site:
-  - The office ("Bike/Shoe Room") left wall, x 880, y 441–478.
-  - The top of the stair corridor, x 308–351, y 373.
+- **The 2 openings first reported as "door-like, not in `#doors`"**, resolved by the user after
+  the spike:
+  - **Office left wall (x 880, y 441–478): a real door.** It's counted as a hit above.
+  - **Top of the stair corridor (x 308–351, y 373): built-in shelving set deep into the wall,** so
+    it's a **false positive**. In a sense the model read the drawing correctly: the plan draws the
+    shelving recess as an unglazed gap in the wall, the same way it draws doorways. The glazing
+    check then also calls it a door. Neither the model nor a pixel rule can tell a shelf niche from
+    a doorway when the drawing convention is identical. That's why the upload feature needs the
+    user to confirm what each opening is (door / window / plain opening / other); see
+    [`docs/notes/door-window-editing.md`](../../docs/notes/door-window-editing.md).
+  - The model's JSON is unchanged. Both resolutions live in the reference file and the score.
 
 ### Windows, and other openings
 

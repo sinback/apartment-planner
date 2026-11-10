@@ -10,8 +10,11 @@ are within `across` px, and they overlap along the wall by at least half of the 
   drawn with a seam).
 - The geometry hit (an opening exists there) and the class (door vs. window) are scored separately.
 
+With --only door, only model *doors* are scored, against door references (plus neutral ones);
+model windows are ignored. Use it when the reference has no window list (plan 1).
+
 Usage: python score_openings.py --model walls_doors.image.json --ref references/plan2-openings.json
-       [--across 6] [--out score.json]
+       [--across 6] [--only door] [--out score.json]
 """
 import argparse
 import json
@@ -38,9 +41,12 @@ def matches(m, r, across):
     return abs(cm - cr) <= across and ov >= 0.5 * min(m1 - m0, r1 - r0)
 
 
-def score(model, ref, across):
+def score(model, ref, across, only=None):
     mods = [dict(o, cls="door") for o in model["doors"]] + [dict(o, cls="window") for o in model["windows"]]
     refs = ref["openings"]
+    if only:
+        mods = [m for m in mods if m["cls"] == only]
+        refs = [r for r in refs if r["kind"] in (only, "bifold", "sliding", "doorless")]
     hits_of = {i: [] for i in range(len(refs))}
     claimed = set()
     for j, m in enumerate(mods):
@@ -51,7 +57,7 @@ def score(model, ref, across):
             hits_of[i].append(j)
             claimed.add(j)
     rows, out = [], {}
-    for kind in ("door", "window"):
+    for kind in ((only,) if only else ("door", "window")):
         items = [i for i, r in enumerate(refs) if r["kind"] == kind]
         found = [i for i in items if hits_of[i]]
         right = [i for i in found if any(mods[j]["cls"] == kind for j in hits_of[i])]
@@ -79,12 +85,13 @@ def main():
     ap.add_argument("--model", required=True)
     ap.add_argument("--ref", required=True)
     ap.add_argument("--across", type=float, default=6.0, help="max centerline distance, px")
+    ap.add_argument("--only", choices=["door", "window"])
     ap.add_argument("--out")
     a = ap.parse_args()
-    res = score(json.load(open(a.model)), json.load(open(a.ref)), a.across)
+    res = score(json.load(open(a.model)), json.load(open(a.ref)), a.across, a.only)
     if a.out:
         json.dump(res, open(a.out, "w"), indent=1)
-    for k in ("door", "window"):
+    for k in ((a.only,) if a.only else ("door", "window")):
         r = res[k]
         print(f"{k}s: {r['found_as_opening']}/{r['reference']} found, {r['found_with_right_class']} right class, "
               f"{r['fragmented']} fragmented; missed {r['missed']}; wrong class {r['wrong_class']}")

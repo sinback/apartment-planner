@@ -1,0 +1,107 @@
+{
+ "door": {
+  "reference": 11,
+  "found_as_opening": 11,
+  "found_with_right_class": 11,
+  "fragmented": 0,
+  "missed": [],
+  "wrong_class": []
+ },
+ "neutral_hits": [],
+ "false_positives": [
+  {
+   "cls": "door",
+   "a": [
+    308.0,
+    373.0
+   ],
+   "b": [
+    351.0,
+    373.0
+   ]
+  }
+ ],
+ "false_positive_count": {
+  "as_door": 1,
+  "as_window": 0
+ },
+ "per_reference": [
+  {
+   "ref": "Entry -> Master Bedroom (hinge R)",
+   "kind": "door",
+   "model": [
+    "door"
+   ]
+  },
+  {
+   "ref": "Dining Room -> Master Bedroom (hinge R)",
+   "kind": "door",
+   "model": [
+    "door"
+   ]
+  },
+  {
+   "ref": "Master Bedroom -> Bike/Shoe Room (hinge L)",
+   "kind": "door",
+   "model": [
+    "door"
+   ]
+  },
+  {
+   "ref": "Entry -> Dining Room (hinge L)",
+   "kind": "door",
+   "model": [
+    "door"
+   ]
+  },
+  {
+   "ref": "Kitchen -> Bathroom (hinge L)",
+   "kind": "door",
+   "model": [
+    "door"
+   ]
+  },
+  {
+   "ref": "Kitchen -> staircase (hinge R)",
+   "kind": "door",
+   "model": [
+    "door"
+   ]
+  },
+  {
+   "ref": "Hall -> Bird/Guest Room (hinge R)",
+   "kind": "door",
+   "model": [
+    "door"
+   ]
+  },
+  {
+   "ref": "Hall -> Living Room (hinge L)",
+   "kind": "door",
+   "model": [
+    "door"
+   ]
+  },
+  {
+   "ref": "Closet -> Bird/Guest Room (hinge L)",
+   "kind": "door",
+   "model": [
+    "door"
+   ]
+  },
+  {
+   "ref": "Closet -> Living Room (hinge R)",
+   "kind": "door",
+   "model": [
+    "door"
+   ]
+  },
+  {
+   "ref": "Office left wall doorway (user-confirmed; hinge side unknown)",
+   "kind": "door",
+   "model": [
+    "door"
+   ]
+  }
+ ]
+}

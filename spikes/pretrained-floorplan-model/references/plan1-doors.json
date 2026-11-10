@@ -1,0 +1,138 @@
+{
+ "about": "Plan 1 door reference, in the image frame (= app frame, identity). 10 doors from index.html #doors (hinge -> far jamb, so on the wall FACE, ~3 px from the model's centerline), plus the office doorway the user confirmed after the spike (relayed by the planning session): it isn't in #doors only because its hinge side is unknown. No window reference exists for plan 1, so score with --only door. The stair-corridor 'opening' at x 308-351, y 373 is built-in shelving (user, relayed), so it is deliberately NOT listed: a model door there counts as a false positive.",
+ "openings": [
+  {
+   "name": "Entry -> Master Bedroom (hinge R)",
+   "kind": "door",
+   "a": [
+    831.0,
+    431.0
+   ],
+   "b": [
+    872.0,
+    431.0
+   ]
+  },
+  {
+   "name": "Dining Room -> Master Bedroom (hinge R)",
+   "kind": "door",
+   "a": [
+    784.0,
+    236.0
+   ],
+   "b": [
+    784.0,
+    275.0
+   ]
+  },
+  {
+   "name": "Master Bedroom -> Bike/Shoe Room (hinge L)",
+   "kind": "door",
+   "a": [
+    898.0,
+    438.0
+   ],
+   "b": [
+    937.0,
+    438.0
+   ]
+  },
+  {
+   "name": "Entry -> Dining Room (hinge L)",
+   "kind": "door",
+   "a": [
+    767.0,
+    431.0
+   ],
+   "b": [
+    724.0,
+    431.0
+   ]
+  },
+  {
+   "name": "Kitchen -> Bathroom (hinge L)",
+   "kind": "door",
+   "a": [
+    568.0,
+    533.0
+   ],
+   "b": [
+    568.0,
+    498.0
+   ]
+  },
+  {
+   "name": "Kitchen -> staircase (hinge R)",
+   "kind": "door",
+   "a": [
+    360.0,
+    533.0
+   ],
+   "b": [
+    360.0,
+    495.0
+   ]
+  },
+  {
+   "name": "Hall -> Bird/Guest Room (hinge R)",
+   "kind": "door",
+   "a": [
+    287.0,
+    376.0
+   ],
+   "b": [
+    248.0,
+    376.0
+   ]
+  },
+  {
+   "name": "Hall -> Living Room (hinge L)",
+   "kind": "door",
+   "a": [
+    284.0,
+    318.0
+   ],
+   "b": [
+    244.0,
+    318.0
+   ]
+  },
+  {
+   "name": "Closet -> Bird/Guest Room (hinge L)",
+   "kind": "door",
+   "a": [
+    126.0,
+    376.0
+   ],
+   "b": [
+    165.0,
+    376.0
+   ]
+  },
+  {
+   "name": "Closet -> Living Room (hinge R)",
+   "kind": "door",
+   "a": [
+    176.0,
+    318.0
+   ],
+   "b": [
+    212.0,
+    318.0
+   ]
+  },
+  {
+   "name": "Office left wall doorway (user-confirmed; hinge side unknown)",
+   "kind": "door",
+   "a": [
+    880,
+    441
+   ],
+   "b": [
+    880,
+    478
+   ],
+   "source": "user, relayed by planning session after the spike"
+  }
+ ]
+}
