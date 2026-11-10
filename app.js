@@ -3,7 +3,7 @@
   const PX = PX_PER_FT / 12;       // px per inch
   const W = 1194, H = 703;
   const COLORS = ['#2f6fd6', '#d9822b', '#3a9d5d', '#b4489b', '#c2412f', '#6b5bd2', '#7a8580'];
-  const KEY = 'apt-furniture-layout-v1';
+  const PLAN_ID = AptStorage.DEFAULT_PLAN_ID;   // the only floorplan, until the plan picker arrives
 
   const $ = id => document.getElementById(id);
   const svg = $('plan'), g = $('pieces');
@@ -18,14 +18,12 @@
     { shape: 'circle', name: 'Round table (example)', r: 21, x: 465 * 12 / PX_PER_FT, y: 450 * 12 / PX_PER_FT, rot: 0, color: COLORS[2] },
   ]);
   // positions (x, y) are the piece's center in inches from the plan's top-left
-  function load() {
-    try { const s = JSON.parse(localStorage.getItem(KEY)); if (Array.isArray(s)) return s; } catch (e) {}
-    return null;
-  }
-  function save() { try { localStorage.setItem(KEY, JSON.stringify(pieces)); } catch (e) {} }
+  // Saved in IndexedDB (see storage.js). Nothing is saved until the stored layout has loaded,
+  // so an early render can't overwrite it with an empty list.
+  let loaded = false;
+  function save() { if (loaded) AptStorage.saveLayout(PLAN_ID, pieces); }
   // first visit (nothing saved in this browser): start from the default space
   const startPieces = () => { try { return sanitize(DEFAULT_LAYOUT); } catch (e) { return sample(); } };
-  pieces = (load() || startPieces()).map(p => ({ ...p, id: uid++ }));
 
   // ---- formatting ----
   const fmt = inches => {
@@ -455,5 +453,13 @@
   window.matchMedia('(prefers-color-scheme: dark)').addEventListener?.('change', render);
   new MutationObserver(render).observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
 
-  applyZoom(); render(); drawLPrev();
+  applyZoom(); drawLPrev();
+  AptStorage.init()
+    .then(() => AptStorage.loadLayout(PLAN_ID))
+    .catch(e => { console.warn('Loading the saved layout failed.', e); return null; })
+    .then(saved => {
+      pieces = (saved || startPieces()).map(p => ({ ...p, id: uid++ }));
+      loaded = true;
+      render();
+    });
 })();
