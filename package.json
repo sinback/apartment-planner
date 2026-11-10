@@ -1,0 +1,11 @@
+{
+  "name": "apartment-planner",
+  "private": true,
+  "description": "Dev tooling only. The app itself is static files served by GitHub Pages, with no build step.",
+  "scripts": {
+    "test": "playwright test"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.63.0"
+  }
+}
