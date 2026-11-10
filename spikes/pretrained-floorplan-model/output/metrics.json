@@ -1,4 +1,5 @@
 {
+ "wall_thickness_px": 6.0,
  "walls": {
   "all": {
    "pixel_iou": 0.714,
@@ -28,11 +29,11 @@
   }
  },
  "doors": {
-  "hand_placed": 10,
+  "reference_doors": 10,
   "found_as_opening": 10,
   "raw_model_called_door": 0,
   "heuristic_called_door": 10,
-  "extra_doors_not_in_app": [
+  "extra_doors_not_in_reference": [
    {
     "a": [
      880.0,
@@ -54,6 +55,7 @@
     ]
    }
   ],
+  "model_openings_total": 26,
   "per_door": [
    {
     "door": "Entry -> Master Bedroom (hinge R)",
@@ -134,11 +136,11 @@
     363.0,
     179.0
    ],
-   "expected_px": [
-    364.0,
-    178.7
+   "px_per_ft_from_room": [
+    15.96,
+    16.03
    ],
-   "ratio": [
+   "ratio_to_expected": [
     0.997,
     1.002
    ]
@@ -149,11 +151,11 @@
     187.0,
     162.0
    ],
-   "expected_px": [
-    188.0,
-    162.7
+   "px_per_ft_from_room": [
+    15.91,
+    15.93
    ],
-   "ratio": [
+   "ratio_to_expected": [
     0.995,
     0.996
    ]
@@ -164,11 +166,11 @@
     195.0,
     214.0
    ],
-   "expected_px": [
-    196.0,
-    214.7
+   "px_per_ft_from_room": [
+    15.92,
+    15.95
    ],
-   "ratio": [
+   "ratio_to_expected": [
     0.995,
     0.997
    ]
@@ -179,11 +181,11 @@
     209.0,
     245.0
    ],
-   "expected_px": [
-    209.3,
-    245.3
+   "px_per_ft_from_room": [
+    15.97,
+    15.98
    ],
-   "ratio": [
+   "ratio_to_expected": [
     0.998,
     0.999
    ]
@@ -194,11 +196,11 @@
     400.0,
     100.0
    ],
-   "expected_px": [
-    133.3,
-    101.3
+   "px_per_ft_from_room": [
+    48.0,
+    15.79
    ],
-   "ratio": [
+   "ratio_to_expected": [
     3.0,
     0.987
    ]
@@ -209,14 +211,15 @@
     148.0,
     101.0
    ],
-   "expected_px": [
-    149.3,
-    102.7
+   "px_per_ft_from_room": [
+    15.86,
+    15.74
    ],
-   "ratio": [
+   "ratio_to_expected": [
     0.991,
     0.984
    ]
   }
- ]
+ ],
+ "px_per_ft_estimate_image": 15.94
 }

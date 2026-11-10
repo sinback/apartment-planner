@@ -12,6 +12,7 @@ ap.add_argument("--index", required=True)
 a = ap.parse_args()
 
 d = json.load(open(a.json))
+assert d["frame"]["name"] == "app", "embed the app-frame JSON (to_app.py output), not the image-frame one"
 slim = {
     "source": "CubiCasa5K (Kalervo et al. 2019), official model; see spikes/pretrained-floorplan-model",
     "walls": [{"a": w["a"], "b": w["b"], "thickness": w["thickness"]} for w in d["walls"]],

@@ -1,0 +1,11 @@
+# torch/torchvision: install the CPU build first (see setup.sh). Versions used in the spike:
+#   torch==2.15.0+cpu torchvision==0.29.2+cpu
+numpy==2.5.4
+scipy==1.18.1
+pillow==13.0.0
+opencv-python-headless==5.0.0.93
+scikit-image==0.26.0
+shapely==2.2.0
+# Only needed because importing the CubiCasa loader package pulls them in:
+lmdb==3.0.0
+svgpathtools==1.8.0

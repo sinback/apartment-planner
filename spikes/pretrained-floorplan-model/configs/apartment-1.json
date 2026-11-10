@@ -1,0 +1,12 @@
+{
+ "about": "First plan (the listing image in index.html). Room points are on open floor in IMAGE pixels; ft = the image's dimension label (w, h). px_per_ft_image is the expected scale in image pixels (the app uses 16 px/ft and this image maps to it 1:1).",
+ "px_per_ft_image": 16,
+ "rooms": [
+  {"name": "Bedroom 22'9\" x 11'2\"",    "point": [290, 260], "ft": [22.75, 11.1667]},
+  {"name": "Bedroom 11'9\" x 10'2\"",    "point": [201, 480], "ft": [11.75, 10.1667]},
+  {"name": "Kitchen 12'3\" x 13'5\"",    "point": [465, 470], "ft": [12.25, 13.4167]},
+  {"name": "Living Room 13'1\" x 15'4\"", "point": [673, 360], "ft": [13.0833, 15.3333]},
+  {"name": "Bathroom 8'4\" x 6'4\"",     "point": [660, 510], "ft": [8.3333, 6.3333]},
+  {"name": "Office 9'4\" x 6'5\"",       "point": [958, 510], "ft": [9.3333, 6.4167]}
+ ]
+}

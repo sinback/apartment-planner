@@ -237,39 +237,110 @@ recognize this export's room styling, so that output isn't worth building on.
 - **Alternative:** run inference server-side, or once offline per plan (as in this spike), and
   ship JSON to the static page. That keeps the app a single `index.html` with no ML in the browser.
 
-## Reproducing
+## Running it on a new floorplan 🔁
+
+The pipeline is reusable. Image size, resolution and the transform to the app frame are measured
+per image, not hardcoded.
+
+**1. One-time setup.** This installs a venv, the CubiCasa code at a pinned commit, and the weights
+(checked against a pinned SHA-256) into `$CUBICASA_HOME`, default `~/.cache/cubicasa-spike`, outside
+the repo. Needs `download-r2.pytorch.org`, `github.com` and `drive.usercontent.google.com`.
 
 ```bash
-python3 -m venv venv && . venv/bin/activate
-pip install torch torchvision --index-url https://download.pytorch.org/whl/cpu
-pip install opencv-python-headless numpy scipy pillow scikit-image shapely lmdb svgpathtools
-git clone --depth 1 https://github.com/CubiCasa/CubiCasa5k cubicasa_src
-curl -L -o model_best_val_loss_var.pkl \
-  "https://drive.usercontent.google.com/download?id=1gRB7ez1e4H7a9Y09lLqRuna0luZO5VRK&export=download&confirm=t"
+bash setup.sh
 ```
 
-Then, with `original.png` as the source floorplan (1194×703):
+**2. Run the pipeline.**
 
 ```bash
-python infer.py --repo cubicasa_src --weights model_best_val_loss_var.pkl --image original.png --scale 2 --out pred_s2.npz
-python vectorize.py --repo cubicasa_src --pred pred_s2.npz --image original.png --out output/walls_doors.json --render output/walls_doors.png
-python compare.py --json output/walls_doors.json --image original.png --index ../../index.html --out-json output/metrics.json --out-png output/wall_diff.png
-python embed.py --json output/walls_doors.json --index ../../index.html
+~/.cache/cubicasa-spike/venv/bin/python run.py --image new-plan.png --out runs/new-plan
+```
+
+That runs:
+1. `infer.py`, with automatic scale (see below)
+2. `vectorize.py`, in the image's own pixel frame
+3. `compare.py`, wall scores against the image's own ink
+4. `to_app.py`
+
+Optional flags:
+
+| Flag | Use |
+|---|---|
+| `--ref-index ../../index.html` | align to the app's embedded plan with `align.py` (ORB + RANSAC similarity) and output app coordinates |
+| `--transform t.json` | use a known transform instead |
+| `--ref-doors index.html` or `doors.json` | score openings against reference doors (`[{name, a, b}]`, app frame) |
+| `--plan-config configs/x.json` | labeled rooms for the scale check, or for *estimating* px/ft (see `configs/apartment-1.json`) |
+| `--px-per-ft 16` | app-frame scale written to the JSON |
+| `--no-glazing` / `--glazing-dark N` | use the model's raw door/window class, or retune the glazing check |
+| `--embed ../../index.html` | write the result into the app |
+| `--scale N` | force a scale |
+
+**3. Check that nothing regressed** after changing any script (~4 min):
+
+```bash
+~/.cache/cubicasa-spike/venv/bin/python selftest.py --index ../../index.html
+```
+
+It runs the embedded plan *and* a copy shrunk to 0.8× and shifted. It checks that alignment recovers
+the transform, all 10 reference doors are found in both runs, and the copy's walls match the
+original's within 2 px.
+
+**What adapts per image, and how:**
+- **Wall thickness.** It's measured two ways, because they differ:
+  - *Mask thickness* (walls in the model's mask) drives the vectorizer's morphology.
+  - *Ink thickness* (walls as drawn, measured inside the mask) drives the glazing profile and
+    scoring tolerances.
+
+  The model's mask can't go much below ~5 px, so they diverge on small images.
+- **Scale (`--scale auto`).**
+  1. Run at 1× and measure the ink thickness.
+  2. Try 2× plus the scale that gives ~12 px walls.
+  3. Score each against the image's own ink, and keep 2× unless another scale wins by more than
+     0.02 F1.
+
+  The decision is saved to `scale_selection.json`. More upscaling is *not* monotonically better: at
+  3×, a 0.8× copy of this plan lost a wall and a door.
+- **Transform.** Identical images skip matching. Otherwise `transform.json` records the scale,
+  rotation, offset and the dark-pixel IoU after warping. It warns below 0.8.
+
+**What does NOT adapt yet (check these on a new plan):**
+- **The glazing threshold (170)** was picked on this plan's 26 openings. On a new style, start with
+  `--no-glazing`, look at the `glazing_min` values in the JSON, then decide.
+- **The scale rule** (2× default, 0.02 margin) rests on one plan and two synthetic copies.
+- **Only 45° diagonals** are handled; other angles get dropped as blobs.
+- **The "ink" reference** is grey < 100, which assumes dark-on-light line art (`compare.py --dark`).
+- **Window recall** has no reference file; it was counted by eye.
+
+To reproduce this plan's committed outputs exactly, use `original.png`, which is pixel-equivalent to
+`#planImg`: `align.py --ref-index` can extract it.
+
+```bash
+~/.cache/cubicasa-spike/venv/bin/python run.py --image original.png --out output \
+  --ref-index ../../index.html --ref-doors ../../index.html \
+  --plan-config configs/apartment-1.json --embed ../../index.html
 node screenshots.js ../../index.html output/screenshots
 ```
-
-Keep the weights, the clone and `pred_*.npz` out of git (see `.gitignore`).
 
 ## Files
 
 | File | Contents |
 |---|---|
+| `setup.sh`, `requirements.txt` | one-time environment, code and weights setup (pinned) |
+| `run.py` | the whole pipeline for one image, including the auto scale |
 | `infer.py` | model load (`weights_only=True`) and 4-rotation TTA inference |
-| `vectorize.py` | walls/openings → JSON in the app frame, plus the 2D render |
-| `compare.py` | wall pixel overlap, door matching against `#doors`, scale check |
-| `embed.py` | writes the JSON into `index.html` |
+| `vectorize.py` | walls/openings → JSON in the **image** frame, plus a 2D render |
+| `align.py` | image → app-frame transform (ORB + RANSAC similarity) |
+| `to_app.py` | applies the transform; writes the app-frame JSON |
+| `compare.py` | wall overlap vs. image ink, door matching vs. references, scale check |
+| `embed.py` | writes the app-frame JSON into `index.html` |
+| `selftest.py` | regression test on the plan and a shrunk, shifted copy |
 | `screenshots.js` | Playwright screenshots of each plan mode |
-| `output/walls_doors.json` | 48 walls, 12 doors, 14 windows (1194×703 frame, 16 px/ft) |
+| `configs/apartment-1.json` | this plan's labeled rooms and expected px/ft |
+| `output/walls_doors.json` | app frame: 48 walls, 12 doors, 14 windows (1194×703, 16 px/ft) |
+| `output/walls_doors.image.json` | the same, in the image frame (identity here) |
 | `output/walls_doors.png` | 2D render of the vectorized walls, doors and windows only (2×) |
 | `output/wall_diff.png` | wall agreement map |
-| `output/metrics.json` | all numbers above |
+| `output/metrics.json`, `transform.json`, `scale_selection.json` | all numbers above |
+
+The retro on how this spike went, mistakes included, is in
+[`docs/spikes/pretrained-floorplan-model-retro.md`](../../docs/spikes/pretrained-floorplan-model-retro.md).

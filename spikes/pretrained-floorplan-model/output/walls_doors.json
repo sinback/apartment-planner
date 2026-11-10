@@ -1,22 +1,27 @@
 {
  "frame": {
+  "name": "app",
   "viewBox": [
    0,
    0,
    1194,
    703
   ],
-  "px_per_ft": 16
+  "px_per_ft": 16.0
  },
  "source": {
   "model": "CubiCasa5K hg_furukawa_original (model_best_val_loss_var.pkl)",
-  "scale": 2.0,
+  "image": "/tmp/claude-0/-home-user-apartment-planner/2c738ec3-e372-54f2-9ff6-c6bd8db97ebf/scratchpad/original.png",
+  "inference_scale": 2.0,
   "tta": "4 rotations",
+  "wall_thickness_px": 6.0,
+  "mask_wall_thickness_px": 6.0,
   "transform_to_app": {
-   "scale": 1,
+   "scale": 1.0,
+   "rotation_deg": 0.0,
    "offset": [
-    0,
-    0
+    0.0,
+    0.0
    ]
   }
  },

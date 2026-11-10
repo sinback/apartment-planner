@@ -1,0 +1,8 @@
+{
+ "wall_thickness_1x_px": 6.0,
+ "candidates": {
+  "2": 0.9776
+ },
+ "metric": "wall F1 within 1px vs image ink, excluding window spans",
+ "chosen": 2.0
+}

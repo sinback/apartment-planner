@@ -1,4 +1,13 @@
-"""Turn the CubiCasa5K prediction into simple wall / opening geometry in the app frame.
+"""Turn the CubiCasa5K prediction into simple wall / opening geometry, in the IMAGE's pixel frame.
+(to_app.py maps it into the app's frame afterwards.)
+
+Pixel thresholds scale with wall thickness, so the same code works at other resolutions. There
+are TWO thicknesses, and mixing them up breaks things (see wall_thickness):
+  - mask thickness: walls in the model's mask. Used for every morphology step ON the mask.
+  - ink thickness:  walls as drawn in the image. Used for steps on the image (glazing profile)
+                    and for scoring tolerances.
+At 6 px (the first plan at 2x, where both agree) they reduce to the values tuned on that plan
+(min run 9, diagonal kernel 15, ...).
 
 Walls:    from the model's "Wall" room-class mask. 45-degree runs (the bay window) are
           split off first with a diagonal-line opening and fitted with a min-area rectangle;
@@ -11,8 +20,8 @@ Openings: from the official CubiCasa post-processing (floortrans.post_prosessing
           a window glyph has glazing lines inside the wall band, a door is a plain white gap.
 
 Usage:
-  python vectorize.py --repo CUBICASA_SRC --pred pred_s2.npz --image original.png \
-      --out walls_doors.json --render walls_doors.png
+  python vectorize.py --repo CUBICASA_SRC --pred pred.npz --image plan.png \
+      --out walls_doors.image.json --render walls_doors.png [--glazing-dark 170 | --no-glazing]
 """
 import argparse
 import json
@@ -25,11 +34,64 @@ import scipy.stats
 import torch
 from PIL import Image
 
-APP_W, APP_H, PX_PER_FT = 1194, 703, 16
-MIN_RUN = 9          # px; a horizontal/vertical run must be at least this long to count
-MIN_WALL_LEN = 6     # px; drop wall fragments shorter than this
-MIN_THICK = 3        # px; thinner axis-aligned runs are slivers of diagonal walls
-GLAZING_DARK = 170   # cross-wall profile darker than this => window glazing lines present
+# Thresholds as multiples of the wall thickness T (values in brackets are for T = 6 px).
+RUN_K = 1.5          # an H/V run must be >= 1.5 T long to count            [9]
+MIN_LEN_K = 1.0      # drop wall fragments shorter than T                    [6]
+MIN_THICK_K = 0.5    # thinner H/V runs are slivers of diagonal walls        [3]
+DIAG_K = 2.5         # diagonal-line kernel length for 45-degree walls       [15]
+PROFILE_K = 1.2      # half-width of the cross-wall profile at openings      [7]
+GLAZING_DARK = 170   # cross-wall profile darker than this => glazing lines => window
+
+
+def _cross_runs(m, k):
+    """Run lengths ACROSS walls: vertical runs inside horizontal walls and vice versa."""
+    m = m.astype(np.uint8)
+    hm = cv2.morphologyEx(m, cv2.MORPH_OPEN, np.ones((1, k), np.uint8))
+    vm = cv2.morphologyEx(m, cv2.MORPH_OPEN, np.ones((k, 1), np.uint8))
+    out = []
+    for arr in (hm, vm.T):
+        d = np.diff(np.pad(arr.astype(np.int8), ((1, 1), (0, 0))), axis=0)
+        starts, ends = np.nonzero(d.T == 1), np.nonzero(d.T == -1)
+        out.append(ends[1] - starts[1])   # nonzero() on the transpose is ordered column by column
+    r = np.concatenate(out)
+    return r[(r > 0) & (r < k)]   # runs >= k are along a wall, not across it
+
+
+def wall_thickness(mask, gray=None, dark=100):
+    """Median wall thickness in px.
+
+    The model's mask only says WHERE walls are: its output is upsampled x4, so its walls never
+    get much thinner than ~5 px (a 4 px drawn wall and a 6 px one both come out ~5 px at 1x).
+    So when the image has dark wall ink, measure the ink inside the (slightly grown) mask;
+    otherwise fall back to the mask itself.
+    """
+    from skimage.morphology import skeletonize
+    m = mask.astype(np.uint8)
+    if not m.any():
+        return 0.0
+    rough = 2 * float(np.median(cv2.distanceTransform(m, cv2.DIST_L2, 5)[skeletonize(m > 0)]))
+    k = max(9, round(3 * rough))
+    if gray is not None:
+        ink = (gray < dark) & (cv2.dilate(m, np.ones((5, 5), np.uint8)) > 0)
+        if ink.sum() > 0.3 * m.sum():
+            r = _cross_runs(ink, k)
+            if r.size:
+                return float(np.median(r))
+    r = _cross_runs(m, k)
+    return float(np.median(r)) if r.size else rough
+
+
+class P:
+    """Pixel thresholds. t = mask wall thickness (mask morphology), ink = drawn thickness."""
+    def __init__(self, t, ink):
+        self.t, self.ink = t, ink
+        # a run filter shorter than the wall is thick lets walls of the other orientation through
+        self.min_run = max(round(RUN_K * t), int(np.ceil(t)) + 2)
+        self.min_len = MIN_LEN_K * t
+        self.min_thick = MIN_THICK_K * t
+        # a diagonal kernel must not fit inside an L/T junction of two axis walls
+        self.diag = max(round(DIAG_K * t), int(np.ceil(2 * t)) + 3)
+        self.half = max(3, round(PROFILE_K * ink))
 
 
 def official_openings(repo, pred):
@@ -49,7 +111,7 @@ def official_openings(repo, pred):
     return out
 
 
-def opening_segment(poly, gray):
+def opening_segment(poly, gray, half):
     x0, y0 = poly.min(0)
     x1, y1 = poly.max(0)
     horiz = (x1 - x0) >= (y1 - y0)
@@ -58,19 +120,19 @@ def opening_segment(poly, gray):
         a, b = [x0, c], [x1, c]
         lo, hi = int(x0 + (x1 - x0) / 5), int(x1 - (x1 - x0) / 5)
         ci = int(round(c))
-        prof = gray[ci - 7:ci + 8, lo:hi].mean(1)
+        prof = gray[max(ci - half, 0):ci + half + 1, lo:hi].mean(1)
     else:
         c = (x0 + x1) / 2
         a, b = [c, y0], [c, y1]
         lo, hi = int(y0 + (y1 - y0) / 5), int(y1 - (y1 - y0) / 5)
         ci = int(round(c))
-        prof = gray[lo:hi, ci - 7:ci + 8].mean(0)
+        prof = gray[lo:hi, max(ci - half, 0):ci + half + 1].mean(0)
     return a, b, float(prof.min())
 
 
-def split_diagonals(mask, k=15):
+def split_diagonals(mask, k):
     """45-degree walls: pixels covered by a k-long diagonal line that fits inside the mask.
-    Axis-aligned walls (~6 px thick) and their corners can't hold one."""
+    Axis-aligned walls (thickness T < k / 2) and their corners can't hold one."""
     m = mask.astype(np.uint8)
     diag = np.zeros_like(m)
     for ker in (np.eye(k, dtype=np.uint8), np.fliplr(np.eye(k, dtype=np.uint8)).copy()):
@@ -79,10 +141,10 @@ def split_diagonals(mask, k=15):
     return rest, diag
 
 
-def hv_walls(mask):
+def hv_walls(mask, p):
     m = mask.astype(np.uint8)
-    hm = cv2.morphologyEx(m, cv2.MORPH_OPEN, np.ones((1, MIN_RUN), np.uint8))
-    vm = cv2.morphologyEx(m, cv2.MORPH_OPEN, np.ones((MIN_RUN, 1), np.uint8))
+    hm = cv2.morphologyEx(m, cv2.MORPH_OPEN, np.ones((1, p.min_run), np.uint8))
+    vm = cv2.morphologyEx(m, cv2.MORPH_OPEN, np.ones((p.min_run, 1), np.uint8))
     walls = []
     for arr, horiz in ((hm, True), (vm, False)):
         n, lab, stats, _ = cv2.connectedComponentsWithStats(arr, connectivity=4)
@@ -105,12 +167,13 @@ def hv_walls(mask):
                 seg = {"a": [cx, y], "b": [cx, y + h], "thickness": t}
                 length = h
             # Drop thin slivers left at the ends of diagonal runs.
-            if length >= MIN_WALL_LEN and t >= MIN_THICK:
+            if length >= p.min_len and t >= p.min_thick:
                 walls.append(seg)
     return walls
 
 
-def diagonal_walls(residual, min_area=30):
+def diagonal_walls(residual, p):
+    min_area = p.t * p.t
     walls = []
     n, lab, stats, _ = cv2.connectedComponentsWithStats(residual.astype(np.uint8), connectivity=8)
     for i in range(1, n):
@@ -119,7 +182,7 @@ def diagonal_walls(residual, min_area=30):
         ys, xs = np.nonzero(lab == i)
         (cx, cy), (w, h), ang = cv2.minAreaRect(np.stack([xs, ys], 1).astype(np.float32))
         length, thick = max(w, h), min(w, h)
-        if length < 2 * thick or length < MIN_WALL_LEN:
+        if length < 2 * thick or length < p.min_len:
             continue   # a blob, not a wall
         theta = np.deg2rad(ang if w >= h else ang + 90)
         dx, dy = np.cos(theta) * length / 2, np.sin(theta) * length / 2
@@ -151,7 +214,7 @@ def merge_collinear(walls, tol=2.0, gap=2.0):
     return out + rest
 
 
-def cut_doors(walls, doors, slack=2.0):
+def cut_doors(walls, doors, min_len, slack=2.0):
     """CubiCasa's Wall class runs through openings; cut each door span out of the
     axis-aligned wall it sits on so the gap is walkable. Windows stay as wall."""
     for d in doors:
@@ -169,7 +232,7 @@ def cut_doors(walls, doors, slack=2.0):
                 out.append(w)
                 continue
             for s0, s1 in ((w0, lo), (hi, w1)):
-                if s1 - s0 >= MIN_WALL_LEN / 2:
+                if s1 - s0 >= min_len / 2:
                     a, b = list(w["a"]), list(w["b"])
                     a[j], b[j] = s0, s1
                     out.append({**w, "a": a, "b": b})
@@ -182,7 +245,8 @@ def rnd(v, n=1):
 
 
 def render(data, path, scale=2):
-    img = Image.new("RGB", (APP_W * scale, APP_H * scale), "white")
+    _, _, fw, fh = data["frame"]["viewBox"]
+    img = Image.new("RGB", (int(fw * scale), int(fh * scale)), "white")
     a = np.asarray(img).copy()
     S = scale
     for w in data["walls"]:
@@ -207,37 +271,49 @@ def main():
     ap.add_argument("--image", required=True)
     ap.add_argument("--out", required=True)
     ap.add_argument("--render", required=True)
+    ap.add_argument("--glazing-dark", type=float, default=GLAZING_DARK,
+                    help="opening profile darker than this => window (tuned on the first plan only)")
+    ap.add_argument("--no-glazing", action="store_true",
+                    help="skip the glazing check; use the model's own door/window class")
     a = ap.parse_args()
 
     d = np.load(a.pred)
     gray = np.asarray(Image.open(a.image).convert("L")).astype(float)
-    assert gray.shape == (APP_H, APP_W), "expects the original 1194x703 image (identity transform)"
+    assert gray.shape == d["room_argmax"].shape, "prediction and image sizes differ"
+    H, W = gray.shape
 
     wall_mask = d["room_argmax"] == 2
-    axis_mask, diag_mask = split_diagonals(wall_mask)
-    walls = merge_collinear(hv_walls(axis_mask) + diagonal_walls(diag_mask))
+    p = P(wall_thickness(wall_mask), wall_thickness(wall_mask, gray))
+    axis_mask, diag_mask = split_diagonals(wall_mask, p.diag)
+    walls = merge_collinear(hv_walls(axis_mask, p) + diagonal_walls(diag_mask, p))
 
     doors, windows = [], []
     for poly, model_cls in official_openings(a.repo, d["pred"]):
-        p, q, darkest = opening_segment(poly, gray)
-        item = {"a": rnd(p), "b": rnd(q), "model_class": model_cls,
+        s0, s1, darkest = opening_segment(poly, gray, p.half)
+        item = {"a": rnd(s0), "b": rnd(s1), "model_class": model_cls,
                 "glazing_min": round(darkest)}
-        (windows if darkest < GLAZING_DARK else doors).append(item)
-    walls = cut_doors(walls, doors)
+        if a.no_glazing:
+            is_window = model_cls != "door"
+        else:
+            is_window = darkest < a.glazing_dark
+        (windows if is_window else doors).append(item)
+    walls = cut_doors(walls, doors, p.min_len)
 
     data = {
-        "frame": {"viewBox": [0, 0, APP_W, APP_H], "px_per_ft": PX_PER_FT},
+        "frame": {"name": "image", "viewBox": [0, 0, W, H]},
         "source": {"model": "CubiCasa5K hg_furukawa_original (model_best_val_loss_var.pkl)",
-                   "scale": float(d["scale"]), "tta": "4 rotations",
-                   "transform_to_app": {"scale": 1, "offset": [0, 0]}},
-        "door_rule": f"model opening; glazing_min >= {GLAZING_DARK} => door, else window",
+                   "image": a.image, "inference_scale": float(d["scale"]), "tta": "4 rotations",
+                   "wall_thickness_px": round(p.ink, 2), "mask_wall_thickness_px": round(p.t, 2)},
+        "door_rule": ("model class" if a.no_glazing else
+                      f"model opening; glazing_min >= {a.glazing_dark:g} => door, else window"),
         "walls": [{"a": rnd(w["a"]), "b": rnd(w["b"]), "thickness": round(w["thickness"], 1)} for w in walls],
         "doors": doors,
         "windows": windows,
     }
     json.dump(data, open(a.out, "w"), indent=1)
     render(data, a.render)
-    print(f"{len(data['walls'])} walls, {len(doors)} doors, {len(windows)} windows -> {a.out}, {a.render}")
+    print(f"wall thickness ink {p.ink:.2f}px / mask {p.t:.2f}px; {len(data['walls'])} walls, {len(doors)} doors, "
+          f"{len(windows)} windows -> {a.out}, {a.render}")
 
 
 if __name__ == "__main__":
