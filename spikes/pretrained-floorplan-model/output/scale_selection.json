@@ -1,8 +1,9 @@
 {
  "wall_thickness_1x_px": 6.0,
  "candidates": {
-  "2": 0.9776
+  "2": 0.9729
  },
  "metric": "wall F1 within 1px vs image ink, excluding window spans",
+ "rule": "keep 2x unless another beats it by > 0.02",
  "chosen": 2.0
 }

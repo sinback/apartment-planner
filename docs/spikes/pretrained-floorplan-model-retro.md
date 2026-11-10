@@ -113,7 +113,8 @@ included. 🔍
 - *What happened:* the tempting reading was "walls too thick". The diff map showed the red sat almost
   entirely at windows and doors, which is the "Wall runs through openings" fact above.
 - *Fix:* cut door spans out of the walls (real vectorization semantics), and report scores with and
-  without window spans. Excluding windows, precision rose to 0.80 exact and 0.958 within 1 px.
+  without window spans. Excluding windows, precision rose to 0.80 exact and 0.958 within 1 px
+  (0.79 and 0.949 after the merge-bug fix found on plan 2).
 - *Lesson:* diagnose a bad metric spatially before you tune parameters.
 
 **The glazing heuristic.**
@@ -255,3 +256,21 @@ caught three more bugs, all on a copy of the plan shrunk to 0.8× and shifted.*
 - The shifted copy was the useful test: the original alone passed every buggy version above.
   - *Lesson:* a test image with exactly the parameters you tuned on can't catch tuning bugs. Perturb
     it: scale, pad, shift.
+
+## 6. Addendum: what plan 2 (the first held-out image) taught 🧪
+
+- **A bug that had been covering for the model.** On plan 2, the vectorizer dropped whole interior
+  walls at 1× although the mask had them. The cause was `merge_collinear` merging in rounded order
+  and never extending a run's start.
+  - Fixing it changed one plan 1 wall. The closet "gap" that the plan 1 report credited to the
+    model had been kept open by the bug.
+  - *Lesson:* when a pipeline has several layers, a bug in one can make another layer look better
+    than it is. Inspect each layer's raw output, not just the final picture.
+- **The hand-tuned rule failed out of sample.** The glazing check scored 0/10 doors on plan 2,
+  because the contrast cue is inverted in the CubiCasa-app drawing style. That's the "held-out
+  data" warning from section 3, now borne out.
+- **Write the reference before the run.** The plan 2 opening list was committed before any model
+  output existed, so it couldn't drift toward the model's answers.
+- **Different scales suit different parts of the output.** On plan 2, openings were best at 1×
+  (fewest false positives) and walls at 2–3×. The single-scale auto rule would have picked 3×, the
+  worst scale for openings.

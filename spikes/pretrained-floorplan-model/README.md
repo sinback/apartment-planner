@@ -88,15 +88,18 @@ From `output/metrics.json`:
 
 | | Pixel IoU | Precision | Recall | Precision / recall within 1 px |
 |---|---|---|---|---|
-| All wall pixels | 0.714 | 0.716 | 0.996 | 0.860 / 0.998 |
-| Excluding window spans | **0.799** | 0.802 | 0.996 | **0.958 / 0.998** |
+| All wall pixels | 0.708 | 0.710 | 0.996 | 0.853 / 0.998 |
+| Excluding window spans | **0.792** | 0.794 | 0.996 | **0.949 / 0.998** |
+
+*(Updated after plan 2 exposed a vectorizer merge bug; see the closet note below. Before the fix
+these were 0.714 / 0.716 / 0.860 and 0.799 / 0.802 / 0.958.)*
 
 - Every wall in the image is found.
 - **Windows count as wall.** CubiCasa's Wall class runs straight through openings. The vectorizer
   cuts door spans back out and keeps window spans as wall, drawn in window style on top, since a
   window is still a wall for furniture purposes. The image draws windows light, so they score as
   "model only" in the "All" row.
-- The other precision loss is the ~1 px extra thickness: IoU 0.80 exact vs 0.96 within 1 px.
+- The other precision loss is the ~1 px extra thickness: IoU 0.79 exact vs 0.95 within 1 px.
 - The **bay window**'s two 45° walls are vectorized as diagonal segments. The small horizontal
   stubs where the bay meets the main wall (about 8 px) are dropped.
 
@@ -115,8 +118,11 @@ The JSON is the model's actual output; nothing was hand-corrected.
 
 Misses, against the image:
 - **The 2 diagonal bay windows.** The opening detector only proposes axis-aligned openings.
-- **The closet's opening onto the master bedroom** (x 822, y 338–378) isn't reported as an opening.
-  The wall mask does leave the gap open.
+- **The closet's opening onto the master bedroom** (x 822, y 338–378) isn't reported as an opening,
+  and the wall mask **bridges it** with a thin, 1 px-offset wall piece (CubiCasa draws walls through
+  openings). *Correction:* this README first said the gap stayed open. It only looked open because
+  a bug in `merge_collinear` dropped that piece. Plan 2 exposed the bug; see
+  [`plan2-results.md`](plan2-results.md).
 - **The laundry room's bottom gap** (x 490–530, y 322) isn't reported either, but it's also open in
   the wall mask.
 

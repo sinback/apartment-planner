@@ -192,26 +192,60 @@ def diagonal_walls(residual, p):
 
 
 def merge_collinear(walls, tol=2.0, gap=2.0):
-    """Merge axis-aligned segments that sit on the same line and touch or overlap."""
+    """Merge axis-aligned segments that sit on the same line and touch or overlap.
+
+    1. Cluster segments into lines: sorted by their fixed coordinate, a new line starts when
+       the next segment is more than `tol` px from the previous one.
+    2. Within a line, a proper interval merge (min start, max end).
+    The merged segment sits on the fixed coordinate of the line's longest piece.
+    (An earlier version merged in rounded-coordinate order and only ever extended the END of
+    a run, so a long segment merged into a shorter one lost its left part. Plan 2 hit that.)
+    """
     out, rest = [], [w for w in walls if w.get("diagonal")]
     for horiz in (True, False):
         k, j = (1, 0) if horiz else (0, 1)   # k = fixed coord index, j = running coord index
-        segs = sorted((w for w in walls if not w.get("diagonal") and (w["a"][k] == w["b"][k])
-                       and ((w["a"][j] != w["b"][j]))
-                       and (abs(w["b"][0] - w["a"][0]) >= abs(w["b"][1] - w["a"][1])) == horiz),
-                      key=lambda w: (round(w["a"][k]), w["a"][j]))
-        cur = None
-        for s in segs:
-            if cur and abs(s["a"][k] - cur["a"][k]) <= tol and s["a"][j] <= cur["b"][j] + gap:
-                cur["b"][j] = max(cur["b"][j], s["b"][j])
-                cur["thickness"] = max(cur["thickness"], s["thickness"])
-            else:
-                if cur:
-                    out.append(cur)
-                cur = {"a": list(s["a"]), "b": list(s["b"]), "thickness": s["thickness"]}
+        segs = []
+        for w in walls:
+            if w.get("diagonal") or w["a"][k] != w["b"][k] or w["a"][j] == w["b"][j]:
+                continue
+            if (abs(w["b"][0] - w["a"][0]) >= abs(w["b"][1] - w["a"][1])) != horiz:
+                continue
+            lo, hi = sorted((float(w["a"][j]), float(w["b"][j])))
+            segs.append((float(w["a"][k]), lo, hi, w["thickness"]))
+        segs.sort()
+        lines, cur = [], []
+        for sgm in segs:
+            if cur and sgm[0] - cur[-1][0] > tol:
+                lines.append(cur)
+                cur = []
+            cur.append(sgm)
         if cur:
-            out.append(cur)
-    return out + rest
+            lines.append(cur)
+        for line in lines:
+            line.sort(key=lambda t: t[1])
+            run = None
+            for kc, lo, hi, t in line:
+                if run and lo <= run["hi"] + gap:
+                    run["hi"] = max(run["hi"], hi)
+                    run["t"] = max(run["t"], t)
+                    run["pieces"].append((hi - lo, kc))
+                else:
+                    if run:
+                        out.append(run)
+                    run = {"lo": lo, "hi": hi, "t": t, "pieces": [(hi - lo, kc)]}
+            if run:
+                out.append(run)
+        for r in out:
+            if "k" not in r:
+                r["k"], r["horiz"] = max(r["pieces"])[1], horiz
+    res = []
+    for r in out:
+        a, b = [0.0, 0.0], [0.0, 0.0]
+        k, j = (1, 0) if r["horiz"] else (0, 1)
+        a[k] = b[k] = r["k"]
+        a[j], b[j] = r["lo"], r["hi"]
+        res.append({"a": a, "b": b, "thickness": r["t"]})
+    return res + rest
 
 
 def cut_doors(walls, doors, min_len, slack=2.0):
